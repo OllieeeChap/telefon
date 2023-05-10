@@ -130,6 +130,7 @@ class TelephoneDaemon:
 			GPIO.cleanup()
 			os.execv(sys.executable, ['python'] + sys.argv)
 
+		# Easter egg hihihihihi MOUAHAHAHAHAHAH
 		if self.dial_number == "1312":
 			if self.offHook == False:
 				print ("EXPLOSION")
@@ -138,6 +139,7 @@ class TelephoneDaemon:
 				self.dial_number = ""
 				self.Ringtone.ring()
 
+		# Check if not an easter egg, and then stops when user dialed 3 number. Will check if file exists or not, and then load the correct file (or default) in pygame mixer
 		if self.dial_number != "131":
 			if len(self.dial_number) == 3:
 				if self.offHook == False:
@@ -148,6 +150,9 @@ class TelephoneDaemon:
 					self.Ringtone.ring()
 
 	def createPath(self, numberStr):
+		"""
+			This function creates correct path and load file in mixer
+		"""
 		filePath = "audio/" + numberStr + ".mp3"
 		if exists(filePath):
 			print("File exists !")
@@ -160,6 +165,9 @@ class TelephoneDaemon:
 		pygame.mixer.music.load(path)
 
 	def OnSignal(self, signal, frame):
+		"""
+			On user shutdown CTRL-C
+		"""
 		print ("[SIGNAL] Shutting down on %s" % signal)
 		GPIO.cleanup()
 		self.RotaryDial.StopVerifyHook()
