@@ -43,10 +43,17 @@ class TelephoneDaemon:
 		#Ring tone
 		self.Ringtone = Ringtone()
 
+		# Ring at startup
+		for i in range(5):
+			self.Ringtone.ring()
+			time.sleep(0.2)
+			self.Ringtone.unring()
+			time.sleep(0.2)
+
 		# Rotary dial
 		self.RotaryDial = RotaryDial()
 		self.RotaryDial.RegisterCallback(NumberCallback = self.GotDigit, OffHookCallback = self.OffHook, OnHookCallback = self.OnHook, OnVerifyHook = self.OnVerifyHook)
-
+		
 		input("Waiting.\n")
 
 	def OnHook(self):
@@ -88,12 +95,11 @@ class TelephoneDaemon:
 		self.dial_number += str(digit)
 		print ("[NUMBER] We have: %s" % self.dial_number)
 
-		# Shutdown command, since our filesystem isn't read only (yet?)
-		# This hopefully prevents dataloss.
-		# TODO: stop rebooting..
-		if self.dial_number == "0666":
-			#self.Ringtone.playfile(self.config["soundfiles"]["shutdown"])
-			os.system("halt")
+		# Reboot sequence if somethin happens
+		# just dial 0
+		if self.dial_number == "0":
+			GPIO.cleanup()
+			os.execv(sys.executable, ['python'] + sys.argv)
 
 		if self.dial_number == "1312":
 			if self.offHook == False:
