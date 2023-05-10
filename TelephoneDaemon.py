@@ -1,3 +1,16 @@
+"""
+MC Phone Art project
+
+This file is the main daemon for the project. There's still some bug due to the cheap relay we used. I tried to manage those GPIO
+interferences by adding delay, debouncing and sleep but some weird issues can still occurs. That's why a restart procedure is implemented 
+by simply dial 0 on the phone.
+
+This project is based on hnseland project. See readme file for more.
+"""
+
+"""
+	Import packages
+"""
 import os
 from os.path import exists
 import queue
@@ -23,12 +36,9 @@ class TelephoneDaemon:
 	# Off hook timeout
 	offHookTimeoutTimer = None
 
+	# Dial, hook and ring objects
 	RotaryDial = None
 	Ringtone = None
-	SipClient = None
-	WebServer = None
-
-	config = None
 
 	# Allow the audio to play even if ON HOOK appear after a bounce 
 	playBounceHook = False
@@ -36,11 +46,11 @@ class TelephoneDaemon:
 	def __init__(self):
 		print ("[STARTUP]")
 
-		signal.signal(signal.SIGINT, self.OnSignal)
+		signal.signal(signal.SIGINT, self.OnSignal)		 	# Clean exit when CTRL-C
 
-		pygame.mixer.init(buffer=1024)			# init mixer for audio
+		pygame.mixer.init(buffer=1024)						# init mixer for audio
 
-		#Ring tone
+		#Ring tone init
 		self.Ringtone = Ringtone()
 
 		# Ring at startup
@@ -57,26 +67,42 @@ class TelephoneDaemon:
 		input("Waiting.\n")
 
 	def OnHook(self):
+		"""
+			This function is executed whenever the user take the phone in his hands
+		"""
 		print ("[PHONE] On hook")
 		self.offHook = False
+
 		# Reset current number when on hook
 		self.dial_number = ""
-		if not self.playBounceHook:
+
+		# Only execute when an audio is playing --> Stop and unload song from memory
+		if not self.playBounceHook:	
 			pygame.mixer.music.stop()
 			pygame.mixer.music.unload()
 
 	def OffHook(self):
+		"""
+			This function is executed whenever the phone is on its base
+		"""
 		print ("[PHONE] Off hook")
 		self.offHook = True
 		# Reset current number when off hook
 		self.dial_number = ""
+
+		# Stop ringtone
 		self.Ringtone.unring()
 		time.sleep(0.8)
+
+		# Ask if something is playing
 		isPlaying = pygame.mixer.music.get_busy()
 		
+		# Only execute if the user didn't dial
 		if not self.playBounceHook and not isPlaying:
 			pygame.mixer.music.load('audio/numeroter.wav')
 			pygame.mixer.music.play()
+
+		# Execute if the user dial at least 3 number
 		elif not isPlaying:
 			pygame.mixer.music.play()
 			pygame.mixer.music.queue('audio/occupe.wav')
@@ -90,8 +116,11 @@ class TelephoneDaemon:
 		print ("[OFFHOOK TIMEOUT]")
 
 	def GotDigit(self, digit):
+		"""
+			This function is called whenever the user dial a number. It calls audio, easter egg or restart function.
+		"""
+		# Print received digit and number in memory
 		print ("[DIGIT] Got digit: %s" % digit)
-		#self.Ringtone.stophandset()
 		self.dial_number += str(digit)
 		print ("[NUMBER] We have: %s" % self.dial_number)
 
